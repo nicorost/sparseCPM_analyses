@@ -8,7 +8,7 @@ print('Starting script.')
 
 # ----------------------------- IMPORT PACKAGES -------------------------------
 import os
-os.chdir(r'C:\Users\nicolas_rost\Documents\_PhD_MPI\devoted\manuscripts\methods_paper\analysis') # set path
+os.chdir('/binder/nrost/ml_pipeline') # set path
 import pickle
 import numpy as np
 import pandas as pd
