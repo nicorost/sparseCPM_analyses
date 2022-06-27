@@ -433,9 +433,9 @@ def plot_feature_importances(importances, sort_by = 'alphabetically', save = Fal
     )
     if save:
         if 'feature_' in importances['feature_name'].unique()[0]: # check if simulated data or not
-            ggsave(p, filename = f'plots\\features_importances_sim_{sort_by}.png', height = h, width = w, units = 'cm', dpi = 900)
+            ggsave(p, filename = f'plots\\features_importances_sim_{sort_by}.png', height = h, width = w, units = 'cm', dpi = 300)
         else:
-            ggsave(p, filename = f'plots\\features_importances_clin_{sort_by}.png', height = h, width = w, units = 'cm', dpi = 900)
+            ggsave(p, filename = f'plots\\features_importances_clin_{sort_by}.png', height = h, width = w, units = 'cm', dpi = 300)
     return p
 
 
@@ -515,5 +515,5 @@ def plot_feature_importances_main(importances, save = False):
           legend_title = element_blank())
     )
     if save:
-            ggsave(p, filename = f'plots\\features_importances_clin_paper.png', height = h, width = w, units = 'cm', dpi = 900)
+            ggsave(p, filename = f'plots\\features_importances_clin_paper.png', height = h, width = w, units = 'cm', dpi = 300)
     return p

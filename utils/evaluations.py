@@ -5,12 +5,13 @@
 
 import pickle
 import numpy as np
-from sklearn.metrics import balanced_accuracy_score, matthews_corrcoef
+from sklearn.metrics import balanced_accuracy_score, matthews_corrcoef, plot_roc_curve
 from utils.performances import model_performance
 from utils.data_simulation import create_simulated_data
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import seaborn as sns
+from pathlib import Path
 from matplotlib.lines import Line2D
 from scipy.stats import beta, kstest
 import statsmodels.api as sm
@@ -174,6 +175,7 @@ def evaluate_pipeline(data,
 
     # test set performances
     # no rfe
+    print('\nResults from no RFE:')
     m = res_pipe.best_estimator_
     m.fit(Xtrain, ytrain)
     ypred = m.predict(Xtest)
@@ -184,6 +186,7 @@ def evaluate_pipeline(data,
     else:
         model_performance(m, Xtrain, ytrain, Xtest, ytest, 'test', plot_auc = False)
     # rfe
+    print('\nResults from RFE:')
     m_rfe = res_pipe_rfe.best_estimator_.steps[1][1].estimator_
     Xtrain_red = Xtrain[:, res_pipe_rfe.best_estimator_.steps[1][1].support_] # reduced feature set selected by RFE
     Xtest_red = Xtest[:, res_pipe_rfe.best_estimator_.steps[1][1].support_] # reduced feature set selected by RFE
@@ -355,7 +358,7 @@ def plot_performances(metric,
     # plt.annotate('Density', (0.03, 0.475), xycoords = 'figure fraction', va = 'center', rotation = 'vertical')
     plt.legend(handles = legend_elements, bbox_to_anchor = (1.075, 0.5), bbox_transform = fig.transFigure)
     if save:
-        plt.savefig(f'plots\{metric}_all_models.png', dpi = 900, bbox_inches = 'tight')
+        plt.savefig(f'plots\{metric}_all_models.png', dpi = 300, bbox_inches = 'tight')
     plt.show()
 
 
@@ -443,3 +446,88 @@ def qq_plot_permutations(Xtrain, ytrain, Xtest, ytest,
     plt.show()
 
     return ks_tests
+
+
+def plot_roc_curves(Xtrain, ytrain, Xtest, ytest,
+                    save = False):
+    """
+    Function to plot the ROC curves of the non-permuted models.
+
+    Parameters
+    ----------
+    Xtrain : np.array
+        Clinical training features. Simulation training data will be created in here again.
+    ytrain : np.array
+        Clinical training target. Simulation training data will be created in here again.
+    Xtest : np.array
+        Clinical test features. Simulation test data will be created in here again.
+    ytest : np.array
+        Clinical test target. Simulation test data will be created in here again.
+    save : BOOL, optional
+        Should the plot be saved. The default is False.
+
+    Returns
+    -------
+    Plot of performances.
+    """
+
+    # recreate simulation data
+    X_sim, y_sim = create_simulated_data()
+    Xtrain_sim, Xtest_sim, ytrain_sim, ytest_sim = train_test_split(X_sim, y_sim, test_size = 0.2, random_state = 1897)
+
+    # load all results except for permutations
+    files = [f for f in Path.cwd().glob("results/results_pipeline_*") if not "permutations" in f.name]
+    results = {}
+    for f in files:
+        temp = open(f, 'rb')
+        name = str(f.name).replace("results_pipeline_", "")
+        results[name] = pickle.load(temp)
+
+    # create subplots
+    data = ['clin_sgdc', 'sim_sgdc', 'clin_rfcl', 'sim_rfcl', 'clin_svc', 'sim_svc']
+    sns.set(style = 'whitegrid', font_scale = 1.5)
+    fig, axes = plt.subplots(3, 2, figsize = (15, 15))
+    ylabels = ['LR', 'RF', 'SVC']
+    xlabels = ['Clinical data', 'Simulated data']
+    legend_labels = ['no RFE', 'RFE']
+
+    # loop through results and create plots
+    for i, ax in enumerate(axes.flatten()):
+
+        # performances
+        d = data[i]
+        if 'clin' in d:
+            # no rfe
+            m = results[f'{d}_no_rfe'].best_estimator_
+            m.fit(Xtrain, ytrain)
+            # rfe
+            m_rfe = results[f'{d}_rfe'].best_estimator_.steps[1][1].estimator_
+            Xtrain_red = Xtrain[:, results[f'{d}_rfe'].best_estimator_.steps[1][1].support_] # reduced feature set selected by RFE
+            Xtest_red = Xtest[:, results[f'{d}_rfe'].best_estimator_.steps[1][1].support_] # reduced feature set selected by RFE
+            m_rfe.fit(Xtrain_red, ytrain)
+            # create plots
+            plot_roc_curve(m, Xtest, ytest, color = '#FEB302', name = 'no RFE', ax = ax)
+            plot_roc_curve(m_rfe, Xtest_red, ytest, color = '#FF5D3E', name = 'RFE', ax = ax)
+        if 'sim' in d:
+            # no rfe
+            m = results[f'{d}_no_rfe'].best_estimator_
+            m.fit(Xtrain_sim, ytrain_sim)
+            # rfe
+            m_rfe = results[f'{d}_rfe'].best_estimator_.steps[1][1].estimator_
+            Xtrain_sim_red = Xtrain_sim[:, results[f'{d}_rfe'].best_estimator_.steps[1][1].support_] # reduced feature set selected by RFE
+            Xtest_sim_red = Xtest_sim[:, results[f'{d}_rfe'].best_estimator_.steps[1][1].support_] # reduced feature set selected by RFE
+            m_rfe.fit(Xtrain_sim_red, ytrain_sim)
+            # create plots
+            plot_roc_curve(m, Xtest_sim, ytest_sim, color = '#FEB302', name = 'no RFE', ax = ax)
+            plot_roc_curve(m_rfe, Xtest_sim_red, ytest_sim, color = '#FF5D3E', name = 'RFE', ax = ax)
+        ax.set_xlabel('')
+        ax.set_ylabel('')
+    for ax, col_label in zip(axes[0], xlabels):
+        ax.set_title(col_label, y = 1.05)
+    for ax in axes[2]:
+        ax.set_xlabel('False positive rate')
+    for ax, row_label in zip(axes[:,0], ylabels):
+        ax.set_ylabel(f'{row_label}\n\nTrue positive rate', rotation = 90)
+    if save:
+        plt.savefig('plots\\roc_curves_all_models.png', dpi = 300, bbox_inches = 'tight')
+    plt.show()

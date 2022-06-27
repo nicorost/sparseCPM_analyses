@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from itertools import cycle
 from sklearn.preprocessing import label_binarize
 from scipy import interp
+from math import sqrt
 
 
 def model_performance(model,
@@ -231,3 +232,26 @@ def cm_performance(cm,
     print('Positive Predictive Values for each group:', np.round(ppv, 3))
     print('Negative Predictive Values for each group:', np.round(npv, 3))
     print('AUC values for each group: ', np.round(auc, 3), 'WARNING: ROC with only one decision threshold significantly underestimates the true AUC!')
+
+
+def binomial_ci(value, n):
+    """
+    Function that calculates the 95% confidence interval for binomial distributions. We use it here for calculating the CIs of classification performance metrics.
+    See: https://machinelearningmastery.com/confidence-intervals-for-machine-learning/
+
+    Parameters
+    ----------
+    value : FLOAT
+        Binomially distributed performance metric, such as accuracy, sensitivity etc.
+    n : INT
+        Sample size of the data from the confusion matrix.
+
+    Returns
+    -------
+    Radius of the confidence interval.
+
+    """
+
+    interval = 1.96 * sqrt((value * (1 - value)) / n)
+
+    return interval

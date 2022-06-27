@@ -8,7 +8,7 @@ print('Starting script.')
 
 # ----------------------------- IMPORT PACKAGES -------------------------------
 import os
-os.chdir('/binder/nrost/ml_pipeline') # set path
+os.chdir(r'C:\Users\nicolas_rost\Documents\_PhD_MPI\devoted\manuscripts\methods_paper\analysis') # set path
 import pickle
 import numpy as np
 import pandas as pd
@@ -38,7 +38,7 @@ args = parser.parse_args()
 # for clinical data
 if args.data == 'clin':
     print('\nClinical data selected.')
-    mars = pd.read_pickle('..\..\..\MARS_ML\MARS_preprocessed_ML_PRScs.pkl')
+    mars = pd.read_pickle('MARS_preprocessed_ML_PRScs.pkl')
     mars = mars.drop('NID', axis = 1)
     # additional preprocessing
     features, outcome = preprocess_data(data = mars,
@@ -132,7 +132,9 @@ if args.data != 'clin' or X.shape[0] <= 1000:
 # evaluate the models and save the performances
 model_performances = ue.calcuate_performances(Xtrain, ytrain, Xtest, ytest)
 # call function that evaluates the results (needs to be run for each dataset and each classifier)
-res_pipe, res_pipe_rfe, res_pipe_perms = ue.evaluate_pipeline('sim', 'rfcl', Xtrain, ytrain, Xtest, ytest, save = False)
+res_pipe, res_pipe_rfe, res_pipe_perms = ue.evaluate_pipeline('clin', 'svc', Xtrain, ytrain, Xtest, ytest, save = False)
+# plot ROC curves
+ue.plot_roc_curves(Xtrain, ytrain, Xtest, ytest, save = False)
 # plot with summary of performances
 ue.plot_performances('MCC', Xtrain, ytrain, Xtest, ytest, t_dis = False, save = False)
 # QQ plots for permutations
@@ -140,7 +142,7 @@ ks_tests = ue.qq_plot_permutations(Xtrain, ytrain, Xtest, ytest, save = False)
 # call function that plots the number of selected features
 df_plot = uf.plot_feature_numbers(Xtrain, ytrain, Xtest, ytest, save = False)
 # plot features against performances (needs to be run for each metric)
-df_plot = uf.plot_features_by_performance('MCC', Xtrain, ytrain, Xtest, ytest, save = True)
+df_plot = uf.plot_features_by_performance('MCC', Xtrain, ytrain, Xtest, ytest, save = False)
 # get permutation importances
 importances, clin_table, sim_table, clin_imps, sim_imps = uf.get_feature_importances(features, Xtrain, ytrain, Xtest, ytest, 25, save = False)
 # load data, since the permutations take a while
